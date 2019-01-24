@@ -70,6 +70,7 @@ CControlUI* CMainWnd::CreateControl(LPCTSTR pstrClass)
 
 void CMainWnd::InitWindow() 
 {
+	SetIcon(IDR_MAINFRAME);
 	// 多语言接口
 	CResourceManager::GetInstance()->SetTextQueryInterface(this);
 	CResourceManager::GetInstance()->LoadLanguage(_T("lan_cn.xml"));
@@ -87,7 +88,7 @@ void CMainWnd::InitWindow()
 	CWebBrowserUI* pBrowser2 = static_cast<CWebBrowserUI*>(m_pm.FindControl(_T("oneclick_browser2")));
 	pBrowser2->SetWebBrowserEventHandler(this);
 	pBrowser1->NavigateUrl(_T("http://blog.csdn.net/duisharp"));
-	pBrowser2->NavigateUrl(_T("http://www.51haoliandan.com"));
+	pBrowser2->NavigateUrl(_T("https://s.click.taobao.com/nPsXfGw"));
 
 	// 动态创建Combo
 	CComboUI* pFontSize = static_cast<CComboUI*>(m_pm.FindControl(_T("font_size")));
@@ -126,6 +127,7 @@ void CMainWnd::InitWindow()
 	pListItem->SetChildVAlign(DT_VCENTER);
 	pListItem->SetFixedHeight(30);
 	pListItem->SetManager(&m_pm, NULL, false);
+	pListItem->SetFixedWidth(100);
 	pList->Add(pListItem);
 	CButtonUI* pBtn1 = new CButtonUI();
 	pBtn1->SetManager(&m_pm, NULL, false);
@@ -142,6 +144,9 @@ void CMainWnd::InitWindow()
 
 	CDialogBuilder builder1;
 	CListContainerElementUI* pListItem1  = (CListContainerElementUI*)builder1.Create(_T("listitem.xml"), NULL, this, &m_pm, NULL);
+	
+	CControlUI* pLabel = pListItem1->FindSubControl(_T("troy"));
+	if(pLabel != NULL) pLabel->SetText(_T("abc_troy"));
 	pList->Add(pListItem1);
 	for(int i = 0; i < 20; i++)
 	{
@@ -244,7 +249,7 @@ HRESULT STDMETHODCALLTYPE CMainWnd::GetHostInfo(CWebBrowserUI* pWeb,
 	/* [out][in] */ DOCHOSTUIINFO __RPC_FAR *pInfo)
 {
 	if (pInfo != NULL) {
-		pInfo->dwFlags |= DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_NO3DOUTERBORDER | DOCHOSTUIFLAG_SCROLL_NO;
+		pInfo->dwFlags |= DOCHOSTUIFLAG_NO3DBORDER | DOCHOSTUIFLAG_NO3DOUTERBORDER;
 	}
 	return S_OK;
 }
@@ -306,9 +311,6 @@ void CMainWnd::Notify(TNotifyUI& msg)
 {
 	CDuiString name = msg.pSender->GetName();
 	if(msg.sType == _T("windowinit")) {
-		/*if(MSGID_OK != CMsgWnd::MessageBox(m_hWnd, _T("duilib开源项目圈（By Troy）"), _T("查看duilib例子集锦，是否继续？"))) {
-			Close(0);
-		}*/
 	}
 	else if( msg.sType == _T("colorchanged") )
 	{
@@ -319,15 +321,19 @@ void CMainWnd::Notify(TNotifyUI& msg)
 			pRoot->SetBkImage(_T(""));
 		}
 	}
+	else if(msg.sType == DUI_MSGTYPE_ITEMACTIVATE) {
+		if(MSGID_OK == CMsgWnd::MessageBox(m_hWnd, _T("Duilib旗舰版"), _T("确定退出duidemo演示程序？")))
+		{
+			::DestroyWindow(m_hWnd);
+		}
+	}
 	else if( msg.sType == _T("showactivex") ) 
 	{
-		if( name.CompareNoCase(_T("ani_flash")) == 0 ) 
-		{
+		if( name.CompareNoCase(_T("ani_flash")) == 0 ) {
 			IShockwaveFlash* pFlash = NULL;
 			CActiveXUI* pActiveX = static_cast<CActiveXUI*>(msg.pSender);
 			pActiveX->GetControl(__uuidof(IShockwaveFlash), (void**)&pFlash);
-			if( pFlash != NULL ) 
-			{
+			if( pFlash != NULL )  {
 				pFlash->put_WMode( _bstr_t(_T("Transparent") ) );
 				pFlash->put_Movie( _bstr_t(CPaintManagerUI::GetInstancePath() + _T("\\skin\\duidemo\\other\\waterdrop.swf")) );
 				pFlash->DisableLocalSecurity();
@@ -342,7 +348,7 @@ void CMainWnd::Notify(TNotifyUI& msg)
 	{
 		if( name.CompareNoCase(_T("closebtn")) == 0 ) 
 		{
-			if(IDYES == MessageBox(m_hWnd, _T("确定退出duidemo演示程序？"), _T("Duilib旗舰版"), MB_YESNO))
+			if(MSGID_OK == CMsgWnd::MessageBox(m_hWnd, _T("Duilib旗舰版"), _T("确定退出duidemo演示程序？")))
 			{
 				::DestroyWindow(m_hWnd);
 			}
@@ -360,7 +366,7 @@ void CMainWnd::Notify(TNotifyUI& msg)
 		// 按钮消息
 		OnLClick(msg.pSender);
 	}
-
+	
 	else if(msg.sType==_T("selectchanged"))
 	{
 		CTabLayoutUI* pTabSwitch = static_cast<CTabLayoutUI*>(m_pm.FindControl(_T("tab_switch")));
@@ -378,6 +384,21 @@ void CMainWnd::Notify(TNotifyUI& msg)
 		pPro1->SetValue(pSlider->GetValue());
 		pPro2->SetValue(pSlider->GetValue());
 	}
+	else if(msg.sType == _T("predropdown") && name == _T("font_size"))
+	{
+		CComboUI* pFontSize = static_cast<CComboUI*>(m_pm.FindControl(_T("font_size")));
+		if(pFontSize)
+		{
+			pFontSize->RemoveAll();
+			for(int i = 0; i < 10; i++) {
+				CListLabelElementUI * pElement = new CListLabelElementUI();
+				pElement->SetText(_T("测试长文字"));
+				pElement->SetFixedHeight(30);
+				pFontSize->Add(pElement);
+			}
+			pFontSize->SelectItem(0);
+		}
+	}
 
 	return WindowImplBase::Notify(msg);
 }
@@ -386,12 +407,24 @@ void CMainWnd::OnLClick(CControlUI *pControl)
 	CDuiString sName = pControl->GetName();
 	if(sName.CompareNoCase(_T("homepage_btn")) == 0)
 	{
+		// 动态创建Combo
+		CComboUI* pFontSize = static_cast<CComboUI*>(m_pm.FindControl(_T("mycombo")));
+		if(pFontSize)
+		{
+			pFontSize->RemoveAll();
+			CListLabelElementUI * pElement = new CListLabelElementUI();
+			pElement->SetText(_T("测试长文字"));
+			pElement->SetFixedHeight(30);
+			pElement->SetFixedWidth(120);
+			pFontSize->Add(pElement);
+			pFontSize->NeedParentUpdate();
+		}
 		//CComboUI* pFontSize = static_cast<CComboUI*>(m_pm.FindControl(_T("mycombo")));
 		//if(pFontSize)
 		//{
 		//	pFontSize->SetFixedXY(CDuiSize(pFontSize->GetFixedXY().cx + 5, pFontSize->GetFixedXY().cy));
 		//}
-		ShellExecute(NULL, _T("open"), _T("https://github.com/qdtroy"), NULL, NULL, SW_SHOW);
+		//ShellExecute(NULL, _T("open"), _T("https://github.com/qdtroy"), NULL, NULL, SW_SHOW);
 	}
 	else if(sName.CompareNoCase(_T("button1")) == 0)
 	{
@@ -405,7 +438,7 @@ void CMainWnd::OnLClick(CControlUI *pControl)
 	else if(sName.CompareNoCase(_T("popwnd_btn")) == 0)
 	{
 		CPopWnd* pPopWnd = new CPopWnd();
-		pPopWnd->Create(m_hWnd, _T("透明窗口演示"), WS_POPUP | WS_VISIBLE, WS_EX_TOOLWINDOW, 0, 0, 800, 572);
+		pPopWnd->Create(m_hWnd, NULL, WS_POPUP | WS_VISIBLE, WS_EX_TOOLWINDOW, 0, 0, 800, 572);
 		pPopWnd->CenterWindow();
 	}
 	else if(sName.CompareNoCase(_T("modal_popwnd_btn")) == 0)
@@ -480,6 +513,12 @@ void CMainWnd::OnLClick(CControlUI *pControl)
 	{
 		int nDPI = _ttoi(pControl->GetUserData());
 		m_pm.SetDPI(nDPI);
+	}
+	else if(sName.CompareNoCase(_T("combo_closebtn")) == 0 ) 
+	{
+		CMsgWnd::ShowMessageBox(m_hWnd, _T("Combo按钮点击"), _T("Combo列表项-按钮点击"));
+
+		return; 
 	}
 }
 
@@ -597,5 +636,6 @@ LRESULT CMainWnd::HandleCustomMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, B
 
 LRESULT CMainWnd::OnGetMinMaxInfo(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
+	bHandled = FALSE;
 	return 0;
 }

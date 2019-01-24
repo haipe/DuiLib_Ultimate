@@ -13,8 +13,78 @@
 #define DUI_MSGTYPE_TABINDEXCHANGED			(_T("tabindexchanged"))
 #define DUI_MSGTYPE_TABCLOSED				(_T("tabclosed"))
 #define DUI_MSGTYPE_PAGERCHANGED			(_T("pagerchanged"))
+#define TIMERID_MOVEBANNER	100
 
 extern "C" TROYCONTROLS_API CControlUI* CreateControl(LPCTSTR pstrType);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+class CMoveBannerUI : public CHorizontalLayoutUI
+{
+public:
+	CMoveBannerUI();
+	~CMoveBannerUI();
+
+public:
+	void Start();
+	void Stop();
+
+public:
+	LPCTSTR GetClass() const;
+	LPVOID GetInterface(LPCTSTR pstrName);
+	void SetPos(RECT rc, bool bNeedInvalidate = true);
+	void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
+	void SetBkImage(LPCTSTR pStrImage);
+	void PaintBkImage(HDC hDC);
+	void DoEvent(TEventUI& event);
+	void OnTimer(UINT_PTR idEvent);
+
+
+private:
+	bool m_bHoverPause;
+	int m_nElapse;
+	int m_nStep;
+	int m_nCurSpace;
+	int m_nMaxSpace;
+	RECT m_rcImage;
+	SIZE m_szImage;
+	bool m_bHot;
+	TImageInfo* m_pNormal;
+	TImageInfo* m_pHot;
+	HDC m_hNormalDC;
+	HDC m_hHotDC;
+};
+
+class TROYCONTROLS_API CFloatBannerUI : public CHorizontalLayoutUI
+{
+public:
+	CFloatBannerUI();
+	~CFloatBannerUI();
+
+public:
+	void Start();
+	void Stop();
+
+public:
+	LPCTSTR GetClass() const;
+	LPVOID GetInterface(LPCTSTR pstrName);
+	void SetPos(RECT rc, bool bNeedInvalidate = true);
+	void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
+	void SetBkImage(LPCTSTR pStrImage);
+	void DoEvent(TEventUI& event);
+	void OnTimer(UINT_PTR idEvent);
+	bool OnEvent(void* param);
+
+private:
+	bool m_bHoverPause;
+	int m_nElapse;
+	int m_nStep;
+	int m_nCurSpace;
+	int m_nMaxSpace;
+	CControlUI* m_pLeft;
+	CButtonUI* m_pMoveBtn;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -45,7 +115,7 @@ public:
 	void DoEvent(TEventUI& event);
 
 	void DoInit();
-	void DoPaint(HDC hDC, const RECT& rcPaint);
+	bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl);
 	void DoPostPaint(HDC hDC, const RECT& rcPaint);
 	void PaintStatusImage(HDC hDC);
 	void PaintIcon(HDC hDC);
@@ -417,6 +487,108 @@ protected:
 	std::vector<CKnot*> m_arrKnots;
 };
 
+class TROYCONTROLS_API CChartUI : public CControlUI
+{
+public:
+	CChartUI()
+	{
+		// 外边框 颜色大小
+		m_dwBorderColor = 0xff888888;
+		m_nBorderSize = 1;
+		// 点边框 颜色大小
+		m_dwDotBorderColor = 0xffFFFF00;
+		m_nDotBorderSize = 2;
+		// 点 背景图片和尺寸
+		m_sDotImage.Empty();
+		m_nDotSize = 8;
+		// 连接线 颜色大小
+		m_dwDotLineColor = 0xffFFFF00;
+		m_nDotLineSize = 1;
+
+		// 内部使用
+		m_nSelectedDot = -1;
+		m_uButtonState = 0;
+		m_wCursor = IDC_ARROW;
+	}
+
+public:
+	void InitChart(int nCount = 10, int nDotSpace = 24)
+	{
+		int nChartSize = nDotSpace * nCount + m_nDotSize;
+		SetFixedWidth(nChartSize);
+		SetFixedHeight(nChartSize);
+		for (int i = 0; i <= nCount; i++) {
+			POINT ptDot = { 0,0 };
+			ptDot.x = nDotSpace * i;
+			ptDot.y = nDotSpace * (nCount - i);
+			m_vDots.push_back(ptDot);
+		}
+
+		NeedParentUpdate();
+		Invalidate();
+	}
+
+	void ClearDots()
+	{
+		m_vDots.clear();
+		NeedParentUpdate();
+		Invalidate();
+	}
+
+	void SetDots(std::vector<POINT> vDots)
+	{
+		if (vDots.size() > 0) {
+			m_vDots = vDots;
+
+			int nCount = vDots.size();
+			int nChartSize = vDots[nCount - 1].x - vDots[0].x + m_nDotSize;
+			SetFixedWidth(nChartSize);
+			SetFixedHeight(nChartSize);
+
+			NeedParentUpdate();
+			Invalidate();
+		}
+	}
+
+	int GetDots(std::vector<POINT>& vDots)
+	{
+		vDots = m_vDots;
+		return	(int)vDots.size();
+	}
+
+	UINT GetControlFlags() const
+	{
+		if (!IsEnabled()) return CControlUI::GetControlFlags();
+		return UIFLAG_SETCURSOR;
+	}
+
+	bool HitTest(POINT ptDot, POINT ptMouse);
+
+	void DoEvent(TEventUI& event);
+	void PaintBkImage(HDC hDC);
+
+private:
+	std::vector<POINT> m_vDots;
+	int m_nBorderSize;
+	DWORD m_dwBorderColor;
+
+	int m_nDotBorderSize;
+	DWORD m_dwDotBorderColor;
+	int m_nDotLineSize;
+	DWORD m_dwDotLineColor;
+
+	CDuiString m_sDotImage;
+	int m_nDotSize;
+
+	UINT m_uButtonState;
+	POINT m_ptLastPoint;
+	POINT m_ptCurPoint;
+
+	int m_nSelectedDot;
+	POINT m_ptSelectedDot;
+	LPTSTR m_wCursor;
+	int m_nHitKnot;
+};
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
@@ -464,6 +636,9 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 //虚拟列表数据源接口
 class IVListDataSource
 {
@@ -509,6 +684,7 @@ public:
 	virtual void RemoveDataAt(int nIndex);
 	virtual void RemoveAllData();
 	virtual bool SortItems(int(__cdecl *_PtFuncCompare)(void* ,const void*,const void*),void* pArgs);
+
 protected:
 	CStdPtrArray  m_arraySelectIndexList;
 	CStdPtrArray  m_arrayDataList;
@@ -542,9 +718,9 @@ public:
 	int  CalculateItemTopPos(int nFirstIndex, int nFirstPos, int nItemIndex);
 	CControlUI* CreateNewItem(int nItemIndex,LPVOID lpData);
 
-	void SetPos(RECT rc);
+	void SetPos(RECT rc, bool bNeedInvalidate = true);
 	void DoEvent(TEventUI& event);
-	void SetScrollPos(SIZE szPos);
+	void SetScrollPos(SIZE szPos, bool bMsg = true);
 
 	void SetShiftStartIndex(int nIndex);
 	int  GetShiftStartIndex();
@@ -624,6 +800,8 @@ public:
 	void SetDisabledItemBkColor(DWORD dwBkColor);
 	void SetDisabledItemImage(LPCTSTR pStrImage);
 	void SetItemLineColor(DWORD dwLineColor);
+	void SetItemShowRowLine(bool bShowLine = false);
+	void SetItemShowColumnLine(bool bShowLine = false);
 	bool IsItemShowHtml();
 	void SetItemShowHtml(bool bShowHtml = true);
 	RECT GetItemTextPadding() const;
@@ -646,7 +824,7 @@ public:
 
 	SIZE GetScrollPos() const;
 	SIZE GetScrollRange() const;
-	void SetScrollPos(SIZE szPos);
+	void SetScrollPos(SIZE szPos, bool bMsg = true);
 	void LineUp();
 	void LineDown();
 	void PageUp();
@@ -669,10 +847,86 @@ public:
 	virtual void ReloadData();
 
 	bool Add(CControlUI* pControl);
-	void SetPos(RECT rc);
+	void SetPos(RECT rc, bool bNeedInvalidate = true);
 
 protected: 
 	CVListViewUI* m_pList;
 	CListHeaderUI* m_pHeader;
 	TListInfoUI m_ListInfo;
+};
+
+class TROYCONTROLS_API CVBaseListUI : public CVListUI
+{
+public:
+	CVBaseListUI();
+	~CVBaseListUI();
+
+	virtual void Init();
+	                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+	virtual void AddData(LPVOID lpData);	
+	virtual void RemoveData(LPVOID lpData);
+	virtual void RemoveDataAt(int nIndex);
+	virtual void RemoveAllData();
+	virtual int GetSourceItemCount();
+
+protected:
+	CVListDataSource*  m_pDataSourceAll;
+};
+/////////////////////////////////////////////////////////////////////////////////////
+//
+
+class TROYCONTROLS_API CListRichElementUI : public CHorizontalLayoutUI, public IListItemUI
+{
+	DECLARE_DUICONTROL(CListRichElementUI)
+public:
+	CListRichElementUI();
+	~CListRichElementUI();
+
+	LPCTSTR GetClass() const;
+	UINT GetControlFlags() const;
+	LPVOID GetInterface(LPCTSTR pstrName);
+
+	int GetIndex() const;
+	void SetIndex(int iIndex);
+
+	IListOwnerUI* GetOwner();
+	void SetOwner(CControlUI* pOwner);
+	void SetVisible(bool bVisible = true);
+	void SetEnabled(bool bEnable = true);
+
+	bool IsSelected() const;
+	bool Select(bool bSelect = true);
+	bool SelectMulti(bool bSelect = true);
+	bool IsExpanded() const;
+	bool Expand(bool bExpand = true);
+
+	void Invalidate(); // 直接CControl::Invalidate会导致滚动条刷新，重写减少刷新区域
+	bool Activate();
+
+	void DoEvent(TEventUI& event);
+	void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
+	bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl);
+
+	LPCTSTR GetText(int iIndex) const;
+	void SetText(int iIndex, LPCTSTR pstrText);
+
+	CDuiString* GetLinkContent(int iIndex);
+
+	virtual void DrawItemText(HDC hDC, const RECT& rcItem);
+	virtual void DrawItemBk(HDC hDC, const RECT& rcItem);
+
+	void SetPos(RECT rc, bool bNeedInvalidate = true);
+
+protected:
+	int m_iIndex;
+	bool m_bSelected;
+	UINT m_uButtonState;
+	IListUI* m_pOwner;
+
+	enum { MAX_LINK = 8 };
+	int m_nLinks;
+	RECT m_rcLinks[MAX_LINK];
+	CDuiString m_sLinks[MAX_LINK];
+	int m_nHoverLink;
+	CStdPtrArray m_aTexts;
 };

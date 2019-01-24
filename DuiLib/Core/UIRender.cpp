@@ -236,7 +236,7 @@ namespace DuiLib {
 	/////////////////////////////////////////////////////////////////////////////////////
 	//
 	//
-	
+
 	bool DrawImage(HDC hDC, CPaintManagerUI* pManager, const RECT& rc, const RECT& rcPaint, const CDuiString& sImageName, \
 		const CDuiString& sImageResType, RECT rcItem, RECT rcBmpPart, RECT rcCorner, DWORD dwMask, BYTE bFade, \
 		bool bHole, bool bTiledX, bool bTiledY, HINSTANCE instance = NULL)
@@ -313,7 +313,7 @@ namespace DuiLib {
 				}
 				else {
 					sFile += CPaintManagerUI::GetResourceZip();
-					CDuiString sFilePwd = CPaintManagerUI::GetResourceZipPwd();  //Garfield 20160325 带密码zip包解密
+					CDuiString sFilePwd = CPaintManagerUI::GetResourceZipPwd();
 					HZIP hz = NULL;
 					if( CPaintManagerUI::IsCachedResourceZip() ) hz = (HZIP)CPaintManagerUI::GetResourceZipHandle();
 					else
@@ -347,12 +347,10 @@ namespace DuiLib {
 			}
 			else {
 				HINSTANCE dllinstance = NULL;
-				if (instance)
-				{
+				if (instance) {
 					dllinstance = instance;
 				}
-				else
-				{
+				else {
 					dllinstance = CPaintManagerUI::GetResourceDll();
 				}
 				HRSRC hResource = ::FindResource(dllinstance, bitmap.m_lpstr, type);
@@ -393,7 +391,6 @@ namespace DuiLib {
 		}
 		if (!pData)
 		{
-			//::MessageBox(0, _T("读取图片数据失败！"), _T("抓BUG"), MB_OK);
 			return NULL;
 		}
 
@@ -402,7 +399,6 @@ namespace DuiLib {
 		pImage = stbi_load_from_memory(pData, dwSize, &x, &y, &n, 4);
 		delete[] pData;
 		if( !pImage ) {
-			//::MessageBox(0, _T("解析图片失败"), _T("抓BUG"), MB_OK);
 			return NULL;
 		}
 
@@ -420,7 +416,6 @@ namespace DuiLib {
 		LPBYTE pDest = NULL;
 		HBITMAP hBitmap = ::CreateDIBSection(NULL, &bmi, DIB_RGB_COLORS, (void**)&pDest, NULL, 0);
 		if( !hBitmap ) {
-			//::MessageBox(0, _T("CreateDIBSection失败"), _T("抓BUG"), MB_OK);
 			return NULL;
 		}
 
@@ -686,7 +681,7 @@ namespace DuiLib {
 		Gdiplus::Image* pImage = NULL;
 		if(pData != NULL) {
 			pImage = GdiplusLoadImage(pData, dwSize);
-			delete pData;
+			delete[] pData;
 			pData = NULL;
 		}
 		return pImage;
@@ -926,9 +921,9 @@ namespace DuiLib {
 			if (sStrPath.IsEmpty()) sStrPath = pStrImage;
 			else {
 				/*if (CResourceManager::GetInstance()->GetScale() != 100) {
-					CDuiString sScale;
-					sScale.Format(_T("@%d."), CResourceManager::GetInstance()->GetScale());
-					sStrPath.Replace(_T("."), sScale);
+				CDuiString sScale;
+				sScale.Format(_T("@%d."), CResourceManager::GetInstance()->GetScale());
+				sStrPath.Replace(_T("."), sScale);
 				}*/
 			}
 		}
@@ -1413,7 +1408,7 @@ namespace DuiLib {
 		}
 		bool bRet = DuiLib::DrawImage(hDC, pManager, rcItem, rcPaint, pDrawInfo->sImageName, pDrawInfo->sResType, rcDest, \
 			pDrawInfo->rcSource, pDrawInfo->rcCorner, pDrawInfo->dwMask, pDrawInfo->uFade, pDrawInfo->bHole, pDrawInfo->bTiledX, pDrawInfo->bTiledY, instance);
-		
+
 		return bRet;
 	}
 
@@ -1695,7 +1690,7 @@ namespace DuiLib {
 		}
 	}
 
-	void CRenderEngine::DrawHtmlText(HDC hDC, CPaintManagerUI* pManager, RECT& rc, LPCTSTR pstrText, DWORD dwTextColor, RECT* prcLinks, CDuiString* sLinks, int& nLinkRects, UINT uStyle)
+	void CRenderEngine::DrawHtmlText(HDC hDC, CPaintManagerUI* pManager, RECT& rc, LPCTSTR pstrText, DWORD dwTextColor, RECT* prcLinks, CDuiString* sLinks, int& nLinkRects, int iFont, UINT uStyle)
 	{
 		// 考虑到在xml编辑器中使用<>符号不方便，可以使用{}符号代替
 		// 支持标签嵌套（如<l><b>text</b></l>），但是交叉嵌套是应该避免的（如<l><b>text</l></b>）
@@ -1731,8 +1726,12 @@ namespace DuiLib {
 		HRGN hRgn = ::CreateRectRgnIndirect(&rc);
 		if( bDraw ) ::ExtSelectClipRgn(hDC, hRgn, RGN_AND);
 
-		TEXTMETRIC* pTm = &pManager->GetDefaultFontInfo()->tm;
-		HFONT hOldFont = (HFONT) ::SelectObject(hDC, pManager->GetDefaultFontInfo()->hFont);
+		TFontInfo* pDefFontInfo = pManager->GetFontInfo(iFont);
+		if(pDefFontInfo == NULL) {
+			pDefFontInfo = pManager->GetDefaultFontInfo();
+		}
+		TEXTMETRIC* pTm = &pDefFontInfo->tm;
+		HFONT hOldFont = (HFONT) ::SelectObject(hDC, pDefFontInfo->hFont);
 		::SetBkMode(hDC, TRANSPARENT);
 		::SetTextColor(hDC, RGB(GetBValue(dwTextColor), GetGValue(dwTextColor), GetRValue(dwTextColor)));
 		DWORD dwBkColor = pManager->GetDefaultSelectedBkColor();
@@ -1743,7 +1742,7 @@ namespace DuiLib {
 		if( ((uStyle & DT_CENTER) != 0 || (uStyle & DT_RIGHT) != 0 || (uStyle & DT_VCENTER) != 0 || (uStyle & DT_BOTTOM) != 0) && (uStyle & DT_CALCRECT) == 0 ) {
 			RECT rcText = { 0, 0, 9999, 100 };
 			int nLinks = 0;
-			DrawHtmlText(hDC, pManager, rcText, pstrText, dwTextColor, NULL, NULL, nLinks, uStyle | DT_CALCRECT);
+			DrawHtmlText(hDC, pManager, rcText, pstrText, dwTextColor, NULL, NULL, nLinks, iFont, uStyle | DT_CALCRECT);
 			if( (uStyle & DT_SINGLELINE) != 0 ){
 				if( (uStyle & DT_CENTER) != 0 ) {
 					rc.left = rc.left + ((rc.right - rc.left) / 2) - ((rcText.right - rcText.left) / 2);
@@ -1860,7 +1859,7 @@ namespace DuiLib {
 							//}
 							aColorArray.Add((LPVOID)clrColor);
 							::SetTextColor(hDC,  RGB(GetBValue(clrColor), GetGValue(clrColor), GetRValue(clrColor)));
-							TFontInfo* pFontInfo = pManager->GetDefaultFontInfo();
+							TFontInfo* pFontInfo = pDefFontInfo;
 							if( aFontArray.GetSize() > 0 ) pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
 							if( pFontInfo->bUnderline == false ) {
 								HFONT hFont = pManager->GetFont(pFontInfo->sFontName, pFontInfo->iSize, pFontInfo->bBold, true, pFontInfo->bItalic);
@@ -1878,7 +1877,7 @@ namespace DuiLib {
 					case _T('b'):  // Bold
 						{
 							pstrText++;
-							TFontInfo* pFontInfo = pManager->GetDefaultFontInfo();
+							TFontInfo* pFontInfo = pDefFontInfo;
 							if( aFontArray.GetSize() > 0 ) pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
 							if( pFontInfo->bBold == false ) {
 								HFONT hFont = pManager->GetFont(pFontInfo->sFontName, pFontInfo->iSize, true, pFontInfo->bUnderline, pFontInfo->bItalic);
@@ -1907,7 +1906,6 @@ namespace DuiLib {
 							while( *pstrText > _T('\0') && *pstrText <= _T(' ') ) pstrText = ::CharNext(pstrText);
 							LPCTSTR pstrTemp = pstrText;
 							int iFont = (int) _tcstol(pstrText, const_cast<LPTSTR*>(&pstrText), 10);
-							//if( isdigit(*pstrText) ) { // debug版本会引起异常
 							if( pstrTemp != pstrText ) {
 								TFontInfo* pFontInfo = pManager->GetFontInfo(iFont);
 								aFontArray.Add(pFontInfo);
@@ -1970,7 +1968,7 @@ namespace DuiLib {
 							}
 							if( sName.IsEmpty() ) { // Italic
 								pstrNextStart = NULL;
-								TFontInfo* pFontInfo = pManager->GetDefaultFontInfo();
+								TFontInfo* pFontInfo = pDefFontInfo;
 								if( aFontArray.GetSize() > 0 ) pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
 								if( pFontInfo->bItalic == false ) {
 									HFONT hFont = pManager->GetFont(pFontInfo->sFontName, pFontInfo->iSize, pFontInfo->bBold, pFontInfo->bUnderline, true);
@@ -2103,7 +2101,7 @@ namespace DuiLib {
 					case _T('u'):  // Underline text
 						{
 							pstrText++;
-							TFontInfo* pFontInfo = pManager->GetDefaultFontInfo();
+							TFontInfo* pFontInfo = pDefFontInfo;
 							if( aFontArray.GetSize() > 0 ) pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
 							if( pFontInfo->bUnderline == false ) {
 								HFONT hFont = pManager->GetFont(pFontInfo->sFontName, pFontInfo->iSize, pFontInfo->bBold, true, pFontInfo->bItalic);
@@ -2190,7 +2188,7 @@ namespace DuiLib {
 						pstrText++;
 						aFontArray.Remove(aFontArray.GetSize() - 1);
 						TFontInfo* pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
-						if( pFontInfo == NULL ) pFontInfo = pManager->GetDefaultFontInfo();
+						if( pFontInfo == NULL ) pFontInfo = pDefFontInfo;
 						if( pTm->tmItalic && pFontInfo->bItalic == false ) {
 							ABC abc;
 							::GetCharABCWidths(hDC, _T(' '), _T(' '), &abc);
@@ -2340,7 +2338,7 @@ namespace DuiLib {
 					if( aColorArray.GetSize() > 0 ) clrColor = (int)aColorArray.GetAt(aColorArray.GetSize() - 1);
 					::SetTextColor(hDC, RGB(GetBValue(clrColor), GetGValue(clrColor), GetRValue(clrColor)));
 					TFontInfo* pFontInfo = (TFontInfo*)aFontArray.GetAt(aFontArray.GetSize() - 1);
-					if( pFontInfo == NULL ) pFontInfo = pManager->GetDefaultFontInfo();
+					if( pFontInfo == NULL ) pFontInfo = pDefFontInfo;
 					pTm = &pFontInfo->tm;
 					::SelectObject(hDC, pFontInfo->hFont);
 					if( bInSelected ) ::SetBkMode(hDC, OPAQUE);
@@ -2376,17 +2374,27 @@ namespace DuiLib {
 		::SelectObject(hDC, hOldFont);
 	}
 
-	HBITMAP CRenderEngine::GenerateBitmap(CPaintManagerUI* pManager, CControlUI* pControl, RECT rc)
+	HBITMAP CRenderEngine::GenerateBitmap(CPaintManagerUI* pManager, RECT rc, CControlUI* pStopControl, DWORD dwFilterColor)
 	{
+		if (pManager == NULL) return NULL;
 		int cx = rc.right - rc.left;
 		int cy = rc.bottom - rc.top;
 
+		bool bUseOffscreenBitmap = true;
 		HDC hPaintDC = ::CreateCompatibleDC(pManager->GetPaintDC());
-		HBITMAP hPaintBitmap = ::CreateCompatibleBitmap(pManager->GetPaintDC(), rc.right, rc.bottom);
 		ASSERT(hPaintDC);
-		ASSERT(hPaintBitmap);
+		HBITMAP hPaintBitmap = NULL;
+		//if (pStopControl == NULL && !pManager->IsLayered()) hPaintBitmap = pManager->Get();
+		if( hPaintBitmap == NULL ) {
+			bUseOffscreenBitmap = false;
+			hPaintBitmap = ::CreateCompatibleBitmap(pManager->GetPaintDC(), rc.right, rc.bottom);
+			ASSERT(hPaintBitmap);
+		}
 		HBITMAP hOldPaintBitmap = (HBITMAP) ::SelectObject(hPaintDC, hPaintBitmap);
-		pControl->DoPaint(hPaintDC, rc);
+		if (!bUseOffscreenBitmap) {
+			CControlUI* pRoot = pManager->GetRoot();
+			pRoot->Paint(hPaintDC, rc, pStopControl);
+		}
 
 		BITMAPINFO bmi = { 0 };
 		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -2405,6 +2413,53 @@ namespace DuiLib {
 		{
 			HBITMAP hOldBitmap = (HBITMAP) ::SelectObject(hCloneDC, hBitmap);
 			::BitBlt(hCloneDC, 0, 0, cx, cy, hPaintDC, rc.left, rc.top, SRCCOPY);
+			RECT rcClone = {0, 0, cx, cy};
+			if (dwFilterColor > 0x00FFFFFF) DrawColor(hCloneDC, rcClone, dwFilterColor);
+			::SelectObject(hCloneDC, hOldBitmap);
+			::DeleteDC(hCloneDC);  
+			::GdiFlush();
+		}
+
+		// Cleanup
+		::SelectObject(hPaintDC, hOldPaintBitmap);
+		if (!bUseOffscreenBitmap) ::DeleteObject(hPaintBitmap);
+		::DeleteDC(hPaintDC);
+
+		return hBitmap;
+	}
+
+	HBITMAP CRenderEngine::GenerateBitmap(CPaintManagerUI* pManager, CControlUI* pControl, RECT rc, DWORD dwFilterColor)
+	{
+		if (pManager == NULL || pControl == NULL) return NULL;
+		int cx = rc.right - rc.left;
+		int cy = rc.bottom - rc.top;
+
+		HDC hPaintDC = ::CreateCompatibleDC(pManager->GetPaintDC());
+		HBITMAP hPaintBitmap = ::CreateCompatibleBitmap(pManager->GetPaintDC(), rc.right, rc.bottom);
+		ASSERT(hPaintDC);
+		ASSERT(hPaintBitmap);
+		HBITMAP hOldPaintBitmap = (HBITMAP) ::SelectObject(hPaintDC, hPaintBitmap);
+		pControl->Paint(hPaintDC, rc, NULL);
+
+		BITMAPINFO bmi = { 0 };
+		bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmi.bmiHeader.biWidth = cx;
+		bmi.bmiHeader.biHeight = cy;
+		bmi.bmiHeader.biPlanes = 1;
+		bmi.bmiHeader.biBitCount = 32;
+		bmi.bmiHeader.biCompression = BI_RGB;
+		bmi.bmiHeader.biSizeImage = cx * cy * sizeof(DWORD);
+		LPDWORD pDest = NULL;
+		HDC hCloneDC = ::CreateCompatibleDC(pManager->GetPaintDC());
+		HBITMAP hBitmap = ::CreateDIBSection(pManager->GetPaintDC(), &bmi, DIB_RGB_COLORS, (LPVOID*) &pDest, NULL, 0);
+		ASSERT(hCloneDC);
+		ASSERT(hBitmap);
+		if( hBitmap != NULL )
+		{
+			HBITMAP hOldBitmap = (HBITMAP) ::SelectObject(hCloneDC, hBitmap);
+			::BitBlt(hCloneDC, 0, 0, cx, cy, hPaintDC, rc.left, rc.top, SRCCOPY);
+			RECT rcClone = {0, 0, cx, cy};
+			if (dwFilterColor > 0x00FFFFFF) DrawColor(hCloneDC, rcClone, dwFilterColor);
 			::SelectObject(hCloneDC, hOldBitmap);
 			::DeleteDC(hCloneDC);  
 			::GdiFlush();

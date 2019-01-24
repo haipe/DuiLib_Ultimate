@@ -7,6 +7,12 @@
 #include "SkinFrame.h"
 #include "MainWnd.h"
 #include "PopWnd.h"
+#include "SplashWnd.h"
+
+#define _CRTDBG_MAP_ALLOC
+#include<stdlib.h>
+#include<crtdbg.h>
+
 
 void InitResource()
 {
@@ -42,8 +48,8 @@ void InitResource()
 			strResourcePath += _T("skin\\");
 			CPaintManagerUI::SetResourcePath(strResourcePath.GetData());
 			// 加密
-			CPaintManagerUI::SetResourceZip(_T("duidemo.zip"), true, _T("duilib_ultimate"));
-			//CPaintManagerUI::SetResourceZip(_T("duidemo_pwd.zip"), true);
+			CPaintManagerUI::SetResourceZip(_T("duidemo_pwd.zip"), true, _T("duilib_ultimate"));
+			//CPaintManagerUI::SetResourceZip(_T("duidemo.zip"), true);
 			// 加载资源管理器
 			CResourceManager::GetInstance()->LoadResource(_T("res.xml"), NULL);
 			break;
@@ -79,6 +85,7 @@ void InitResource()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpCmdLine*/, int nCmdShow)
 {
+	_CrtDumpMemoryLeaks();
 	// COM
 	HRESULT Hr = ::CoInitialize(NULL);
 	if( FAILED(Hr) ) return 0;
@@ -88,6 +95,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
 	CPaintManagerUI::SetInstance(hInstance);
 	// 初始化资源
 	InitResource();
+
+	CSplashWnd::MessageBox(NULL);
+
 	// 创建主窗口
 	CMainWnd* pMainWnd = new CMainWnd();
 	if( pMainWnd == NULL ) return 0;
@@ -98,11 +108,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*l
 	// 销毁窗口
 	delete pMainWnd;
 	pMainWnd = NULL;
-	// 销毁资源管理器
-	CResourceManager::GetInstance()->Release();
+	// 清理资源
+	CPaintManagerUI::Term();
 	// OLE
 	OleUninitialize();
 	// COM
 	::CoUninitialize();
+
 	return 0;
 }

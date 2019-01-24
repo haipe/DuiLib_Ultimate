@@ -130,6 +130,8 @@ namespace DuiLib {
 		if( m_sText == pstrText ) return;
 
 		m_sText = pstrText;
+		// ½âÎöxml»»ÐÐ·û
+		m_sText.Replace(_T("{\\n}"), _T("\n"));
 		Invalidate();
 	}
 
@@ -1199,10 +1201,19 @@ namespace DuiLib {
 		return m_cxyFixed;
 	}
 
-	void CControlUI::DoPaint(HDC hDC, const RECT& rcPaint)
+	bool CControlUI::Paint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl)
 	{
-		if( !::IntersectRect(&m_rcPaint, &rcPaint, &m_rcItem) ) return;
+		if (pStopControl == this) return false;
+		if( !::IntersectRect(&m_rcPaint, &rcPaint, &m_rcItem) ) return true;
+		//if( OnPaint ) {
+		//	if( !OnPaint(this) ) return true;
+		//}
+		if (!DoPaint(hDC, m_rcPaint, pStopControl)) return false;
+		return true;
+	}
 
+	bool CControlUI::DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl)
+	{
 		// »æÖÆÑ­Ðò£º±³¾°ÑÕÉ«->±³¾°Í¼->×´Ì¬Í¼->ÎÄ±¾->±ß¿ò
 		SIZE cxyBorderRound;
 		RECT rcBorderSize;
@@ -1235,6 +1246,7 @@ namespace DuiLib {
 			PaintText(hDC);
 			PaintBorder(hDC);
 		}
+		return true;
 	}
 
 	void CControlUI::PaintBkColor(HDC hDC)
@@ -1300,7 +1312,6 @@ namespace DuiLib {
 			nBorderSize = m_nBorderSize;
 			cxyBorderRound = m_cxyBorderRound;
 			rcBorderSize = m_rcBorderSize;
-
 		}
 		
 		if(m_dwBorderColor != 0 || m_dwFocusBorderColor != 0) {
@@ -1312,7 +1323,7 @@ namespace DuiLib {
 					CRenderEngine::DrawRoundRect(hDC, m_rcItem, nBorderSize, cxyBorderRound.cx, cxyBorderRound.cy, GetAdjustColor(m_dwBorderColor), m_nBorderStyle);
 			}
 			else {
-				if (IsFocused() && m_dwFocusBorderColor != 0 && m_nBorderSize > 0) { 
+				if (IsFocused() && m_dwFocusBorderColor != 0 && nBorderSize > 0) { 
 					CRenderEngine::DrawRect(hDC, m_rcItem, nBorderSize, GetAdjustColor(m_dwFocusBorderColor), m_nBorderStyle);
 				}
 				else if(rcBorderSize.left > 0 || rcBorderSize.top > 0 || rcBorderSize.right > 0 || rcBorderSize.bottom > 0) {

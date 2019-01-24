@@ -36,6 +36,7 @@ namespace DuiLib {
 		bool bShowColumnLine;
 		bool bShowHtml;
 		bool bMultiExpandable;
+		bool bRSelected;
 	} TListInfoUI;
 
 
@@ -128,6 +129,9 @@ namespace DuiLib {
 		int GetSelectItemCount() const;
 		int GetNextSelItem(int nItem) const;
 
+		bool IsFixedScrollbar();
+		void SetFixedScrollbar(bool bFixed);
+
 		CListHeaderUI* GetHeader() const;  
 		CContainerUI* GetList() const;
 		UINT GetListType();
@@ -172,6 +176,8 @@ namespace DuiLib {
 		void SetItemShowColumnLine(bool bShowLine = false);
 		bool IsItemShowHtml();
 		void SetItemShowHtml(bool bShowHtml = true);
+		bool IsItemRSelected();
+		void SetItemRSelected(bool bSelected = true);
 		RECT GetItemTextPadding() const;
 		DWORD GetItemTextColor() const;
 		DWORD GetItemBkColor() const;
@@ -221,15 +227,16 @@ namespace DuiLib {
 		BOOL SortItems(PULVCompareFunc pfnCompare, UINT_PTR dwData);
 
 		virtual BOOL CheckColumEditable(int nColum) { return FALSE; };
-		virtual CEditUI* GetEditUI() { return NULL; };
-
+		virtual CRichEditUI* GetEditUI() { return NULL; };
 		virtual BOOL CheckColumComboBoxable(int nColum) { return FALSE; };
 		virtual CComboBoxUI* GetComboBoxUI() { return NULL; };
 
 	protected:
 		int GetMinSelItemIndex();
 		int GetMaxSelItemIndex();
+
 	protected:
+		bool m_bFixedScrollbar;
 		bool m_bScrollSelect;
 		int m_iCurSel;
 		bool m_bMultiSel;
@@ -417,7 +424,7 @@ namespace DuiLib {
 
 		void DoEvent(TEventUI& event);
 		SIZE EstimateSize(SIZE szAvailable);
-		void DoPaint(HDC hDC, const RECT& rcPaint);
+		bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl);
 
 		void DrawItemText(HDC hDC, const RECT& rcItem);
 	};
@@ -490,7 +497,7 @@ namespace DuiLib {
 
 		void DoEvent(TEventUI& event);
 		void SetAttribute(LPCTSTR pstrName, LPCTSTR pstrValue);
-		void DoPaint(HDC hDC, const RECT& rcPaint);
+		bool DoPaint(HDC hDC, const RECT& rcPaint, CControlUI* pStopControl);
 
 		virtual void DrawItemText(HDC hDC, const RECT& rcItem);    
 		virtual void DrawItemBk(HDC hDC, const RECT& rcItem);
