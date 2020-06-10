@@ -119,6 +119,7 @@ namespace DuiLib {
 		bool bUseHSL;
 		CDuiString sResType;
 		DWORD dwMask;
+
 	} TImageInfo;
 
 	typedef struct UILIB_API tagTDrawInfo
@@ -140,6 +141,8 @@ namespace DuiLib {
 		bool bTiledX;
 		bool bTiledY;
 		bool bHSL;
+		SIZE szIcon;
+		CDuiString sIconAlign;
 	} TDrawInfo;
 
 	typedef struct UILIB_API tagTPercentInfo
@@ -358,7 +361,7 @@ namespace DuiLib {
 		const TImageInfo* GetImageString(LPCTSTR pStrImage, LPCTSTR pStrModify = NULL);
 
 		// ³õÊ¼»¯ÍÏ×§
-		bool InitDragDrop();
+		bool EnableDragDrop(bool bEnable);
 		virtual bool OnDrop(FORMATETC* pFmtEtc, STGMEDIUM& medium,DWORD *pdwEffect);
 
 		bool AttachDialog(CControlUI* pControl);
@@ -541,6 +544,7 @@ namespace DuiLib {
 		Gdiplus::GdiplusStartupInput *m_pGdiplusStartupInput;
 
 		// ÍÏ×§
+		bool m_bDragDrop;
 		bool m_bDragMode;
 		HBITMAP m_hDragBitmap;
 		

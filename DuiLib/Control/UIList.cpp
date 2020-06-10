@@ -448,7 +448,9 @@ namespace DuiLib {
 		}
 		int iLastSel = m_iCurSel;
 		m_iCurSel = iIndex;
-		m_aSelItems.Add((LPVOID)iIndex);
+		if(m_aSelItems.Find((LPVOID)iIndex) == -1) {
+			m_aSelItems.Add((LPVOID)iIndex);
+		}
 		EnsureVisible(iIndex);
 		if( bTakeFocus ) pControl->SetFocus();
 		if( m_pManager != NULL && iLastSel != m_iCurSel) {
@@ -472,7 +474,6 @@ namespace DuiLib {
 
 		m_iCurSel = iIndex;
 		m_aSelItems.Add((LPVOID)iIndex);
-		EnsureVisible(iIndex);
 		if( bTakeFocus ) pControl->SetFocus();
 		if( m_pManager != NULL ) {
 			m_pManager->SendNotify(this, DUI_MSGTYPE_ITEMSELECT, iIndex);
@@ -525,6 +526,7 @@ namespace DuiLib {
 
 	void CListUI::SelectAllItems()
 	{
+		m_aSelItems.Empty();
 		for (int i = 0; i < GetCount(); ++i) {
 			CControlUI* pControl = GetItemAt(i);
 			if(pControl == NULL) continue;
@@ -1432,6 +1434,7 @@ namespace DuiLib {
 			cXY.cx +=  static_cast<CControlUI*>(m_items[it])->EstimateSize(szAvailable).cx;
 		}
 
+		if (cXY.cx < szAvailable.cx) cXY.cx = szAvailable.cx;
 		return cXY;
 	}
 
@@ -2317,16 +2320,8 @@ namespace DuiLib {
 			cXY.cy += pInfo->rcTextPadding.top + pInfo->rcTextPadding.bottom;
 		}
 
-		if( cXY.cx == 0 && m_pManager != NULL ) {
-			RECT rcText = { 0, 0, 9999, cXY.cy };
-			if( pInfo->bShowHtml ) {
-				int nLinks = 0;
-				CRenderEngine::DrawHtmlText(m_pManager->GetPaintDC(), m_pManager, rcText, sText, 0, NULL, NULL, nLinks, pInfo->nFont, DT_SINGLELINE | DT_CALCRECT | pInfo->uTextStyle & ~DT_RIGHT & ~DT_CENTER);
-			}
-			else {
-				CRenderEngine::DrawText(m_pManager->GetPaintDC(), m_pManager, rcText, sText, 0, pInfo->nFont, DT_SINGLELINE | DT_CALCRECT | pInfo->uTextStyle & ~DT_RIGHT & ~DT_CENTER);
-			}
-			cXY.cx = rcText.right - rcText.left + pInfo->rcTextPadding.left + pInfo->rcTextPadding.right;        
+		if( cXY.cx == 0 && m_pManager != NULL ) {   
+			cXY.cx = szAvailable.cx;
 		}
 
 		return cXY;
@@ -2356,12 +2351,13 @@ namespace DuiLib {
 		if( !IsEnabled() ) {
 			iTextColor = pInfo->dwDisabledTextColor;
 		}
+		RECT rcTextPadding = GetManager()->GetDPIObj()->Scale(pInfo->rcTextPadding);
 		int nLinks = 0;
 		RECT rcText = rcItem;
-		rcText.left += pInfo->rcTextPadding.left;
-		rcText.right -= pInfo->rcTextPadding.right;
-		rcText.top += pInfo->rcTextPadding.top;
-		rcText.bottom -= pInfo->rcTextPadding.bottom;
+		rcText.left += rcTextPadding.left;
+		rcText.right -= rcTextPadding.right;
+		rcText.top += rcTextPadding.top;
+		rcText.bottom -= rcTextPadding.bottom;
 
 		if( pInfo->bShowHtml )
 			CRenderEngine::DrawHtmlText(hDC, m_pManager, rcText, sText, iTextColor, \
